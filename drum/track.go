@@ -12,6 +12,9 @@ const (
 	NumTrackIDBytes       = 1
 	NumTrackPaddingBytes  = 3
 	NumTrackNameSizeBytes = 1
+
+	// The number of notes in each track
+	NumNotes = 16
 )
 
 type Note bool
@@ -70,7 +73,7 @@ func ParseTracks(r io.Reader) ([]*Track, error) {
 		trackName := string(trackNameBytes)
 
 		// Parse notes
-		noteBytes := make([]byte, 16)
+		noteBytes := make([]byte, NumNotes)
 		if _, err := b.Read(noteBytes); err != nil {
 			return nil, err
 		}
