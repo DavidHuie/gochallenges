@@ -3,7 +3,7 @@ package drum
 type Measure []Note
 
 // Converts a array of bytes consisting of the values
-// 0x00 or 0x01 to an array of bools.
+// 0x00 or 0x01 to measure.
 func ConvertBytesToMeasure(b []byte) Measure {
 	measure := make(Measure, 0)
 	for _, n := range b {

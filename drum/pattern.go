@@ -28,7 +28,6 @@ func (p *Pattern) String() string {
 				if i%4 == 0 {
 					str += "|"
 				}
-
 				if note {
 					str += "x"
 				} else {
