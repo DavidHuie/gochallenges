@@ -1,10 +1,10 @@
 package drum
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
+	"log"
 	"os"
 )
 
@@ -29,12 +29,13 @@ func (d *Decoder) Decode(p *Pattern) error {
 }
 
 const (
-	// The size in bytes of the data contained in the main
-	// metadata segment of a splice file
+	// The size in bytes of the data contained in a splice file
 	numHeaderBytes         = 6
 	numInitialPaddingBytes = 6
 	numHWVersionBytes      = 32
 	numTempoBytes          = 4
+	numTrackPaddingBytes   = 3
+	numNoteBytes           = 16
 
 	// This value is at the beginning of every splice file
 	headerValue = "SPLICE"
@@ -95,15 +96,7 @@ func (d *Decoder) readPattern() (*Pattern, error) {
 	}
 
 	// Read track data
-	trackSize := trackDataSize(payloadSize)
-	trackBytes := make([]byte, trackSize)
-	if _, err := d.reader.Read(trackBytes); err != nil {
-		return nil, mapDecodeError(err)
-	}
-
-	// Parse bytes into tracks
-	trackBuffer := bytes.NewBuffer(trackBytes)
-	tracks, err := parseTracks(trackBuffer)
+	tracks, err := d.parseTracks()
 	if err != nil {
 		return nil, mapDecodeError(err)
 	}
@@ -118,40 +111,45 @@ func (d *Decoder) readPattern() (*Pattern, error) {
 }
 
 // Parses an entire io.Reader into a slice of Tracks.
-func parseTracks(r io.Reader) ([]*track, error) {
+func (d *Decoder) parseTracks() ([]*track, error) {
 	var tracks []*track
+	var parseError error
 
 	for {
 		// Parse instrument number
 		var trackID uint8
-		err := binary.Read(r, binary.BigEndian, &trackID)
+		err := binary.Read(d.reader, binary.BigEndian, &trackID)
 		if err == io.EOF {
 			break
 		} else if err != nil {
 			return nil, err
 		}
 
-		if err := readPadding(r, numTrackPaddingBytes); err != nil {
-			return nil, err
+		if err := readPadding(d.reader, numTrackPaddingBytes); err != nil {
+			parseError = err
+			break
 		}
 
 		// Parse size of track name
 		var trackNameSize uint8
-		if err := binary.Read(r, binary.BigEndian, &trackNameSize); err != nil {
-			return nil, err
+		if err := binary.Read(d.reader, binary.BigEndian, &trackNameSize); err != nil {
+			parseError = err
+			break
 		}
 
 		// Parse track name
 		trackNameBytes := make([]byte, trackNameSize)
-		if _, err := r.Read(trackNameBytes); err != nil {
-			return nil, err
+		if _, err := d.reader.Read(trackNameBytes); err != nil {
+			parseError = err
+			break
 		}
 		trackName := string(trackNameBytes)
 
 		// Parse notes
-		noteBytes := make([]byte, numNotes)
-		if _, err := r.Read(noteBytes); err != nil {
-			return nil, err
+		noteBytes := make([]byte, numNoteBytes)
+		if _, err := d.reader.Read(noteBytes); err != nil {
+			parseError = err
+			break
 		}
 		notes := convertBytesToMeasure(noteBytes)
 
@@ -161,6 +159,13 @@ func parseTracks(r io.Reader) ([]*track, error) {
 			notes: notes,
 		}
 		tracks = append(tracks, track)
+	}
+
+	// If we were able to extract at least one track, don't return
+	// an error.
+	if len(tracks) == 0 && parseError != nil {
+		log.Print("invalid track detected")
+		return nil, parseError
 	}
 
 	return tracks, nil
