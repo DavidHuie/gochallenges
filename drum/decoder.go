@@ -8,6 +8,19 @@ import (
 	"os"
 )
 
+const (
+	// The size in bytes of the data contained in a splice file
+	numHeaderBytes         = 6
+	numInitialPaddingBytes = 6
+	numHWVersionBytes      = 32
+	numTempoBytes          = 4
+	numTrackPaddingBytes   = 3
+	numNoteBytes           = 16
+
+	// This value is at the beginning of every splice file
+	headerValue = "SPLICE"
+)
+
 // Decoder decodes a pattern from an io.Reader.
 type Decoder struct {
 	reader io.Reader
@@ -27,19 +40,6 @@ func (d *Decoder) Decode(p *Pattern) error {
 	*p = *pattern
 	return nil
 }
-
-const (
-	// The size in bytes of the data contained in a splice file
-	numHeaderBytes         = 6
-	numInitialPaddingBytes = 6
-	numHWVersionBytes      = 32
-	numTempoBytes          = 4
-	numTrackPaddingBytes   = 3
-	numNoteBytes           = 16
-
-	// This value is at the beginning of every splice file
-	headerValue = "SPLICE"
-)
 
 // Returns the size of the track data payload based on
 // the size of the entire payload.
