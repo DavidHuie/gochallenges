@@ -4,6 +4,13 @@ import "fmt"
 
 type note bool
 
+func (n note) String() string {
+	if n {
+		return "x"
+	}
+	return "-"
+}
+
 // A single instrument track for a drum machine.
 type track struct {
 	id    uint8
@@ -19,11 +26,7 @@ func (t *track) String() string {
 			if i%4 == 0 {
 				str += "|"
 			}
-			if note {
-				str += "x"
-			} else {
-				str += "-"
-			}
+			str += fmt.Sprintf("%v", note)
 		}
 		str += "|\n"
 	}
