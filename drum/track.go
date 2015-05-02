@@ -1,6 +1,9 @@
 package drum
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 type note bool
 
@@ -19,17 +22,18 @@ type track struct {
 }
 
 func (t *track) String() string {
-	str := fmt.Sprintf("(%v) %s\t", t.id, t.name)
+	buf := bytes.Buffer{}
+	buf.WriteString(fmt.Sprintf("(%v) %s\t", t.id, t.name))
 
 	if len(t.notes) > 0 {
 		for i, note := range t.notes {
 			if i%4 == 0 {
-				str += "|"
+				buf.WriteString("|")
 			}
-			str += fmt.Sprintf("%v", note)
+			buf.WriteString(fmt.Sprintf("%v", note))
 		}
-		str += "|\n"
+		buf.WriteString("|\n")
 	}
 
-	return str
+	return buf.String()
 }
