@@ -21,23 +21,8 @@ func (p *Pattern) String() string {
 	str := ""
 	str += fmt.Sprintf("Saved with HW Version: %s\n", p.hw)
 	str += fmt.Sprintf("Tempo: %v\n", p.tempo)
-
 	for _, track := range p.tracks {
-		str += fmt.Sprintf("(%v) %s\t", track.id, track.name)
-
-		if len(track.notes) > 0 {
-			for i, note := range track.notes {
-				if i%4 == 0 {
-					str += "|"
-				}
-				if note {
-					str += "x"
-				} else {
-					str += "-"
-				}
-			}
-			str += "|\n"
-		}
+		str += fmt.Sprintf("%v", track)
 	}
 	return str
 }
