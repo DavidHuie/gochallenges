@@ -1,6 +1,7 @@
 package drum
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -16,9 +17,15 @@ const (
 	numTempoBytes          = 4
 	numTrackPaddingBytes   = 3
 	numNoteBytes           = 16
+)
 
+var (
 	// This value is at the beginning of every splice file
-	headerValue = "SPLICE"
+	headerValue = []byte("SPLICE")
+
+	// ErrInvalidSpliceData is returned when we detect an error
+	// in the binary structure of a splice file
+	ErrInvalidSpliceData = errors.New("Splice file is invalid")
 )
 
 // Decoder decodes a pattern from an io.Reader.
@@ -52,10 +59,6 @@ func trackDataSize(payloadSize uint64) uint64 {
 		uint64(numTempoBytes)
 }
 
-// ErrInvalidSpliceData is returned when we detect an error
-// in the binary structure of a splice file
-var ErrInvalidSpliceData = errors.New("Splice file is invalid")
-
 // Reads a pattern out of an io.Reader.
 func (d *Decoder) readPattern() (*Pattern, error) {
 	// Read header
@@ -65,7 +68,7 @@ func (d *Decoder) readPattern() (*Pattern, error) {
 	}
 
 	// Validate header
-	if string(header) != headerValue {
+	if !bytes.Equal(header, headerValue) {
 		return nil, ErrInvalidSpliceData
 	}
 
