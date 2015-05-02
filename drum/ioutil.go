@@ -7,13 +7,13 @@ import (
 )
 
 // Reads n bytes from a reader, discarding the output.
-func ReadPadding(r io.Reader, numBytes int) error {
+func readPadding(r io.Reader, numBytes int) error {
 	_, err := r.Read(make([]byte, numBytes))
 	return err
 }
 
 // Read N bytes from a reader into a fixed-size value.
-func ReadIntoValue(
+func readIntoValue(
 	r io.Reader,
 	numBytes int,
 	value interface{},

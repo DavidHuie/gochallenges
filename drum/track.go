@@ -9,44 +9,32 @@ import (
 const (
 	// The size in bytes of the data contained in the
 	// track segment of a splice file
-	NumTrackIDBytes       = 1
-	NumTrackPaddingBytes  = 3
-	NumTrackNameSizeBytes = 1
+	numTrackIDBytes       = 1
+	numTrackPaddingBytes  = 3
+	numTrackNameSizeBytes = 1
 
 	// The number of notes in each track
-	NumNotes = 16
+	numNotes = 16
 )
 
-type Note bool
+type note bool
 
 // A single instrument track for a drum machine.
-type Track struct {
-	ID    uint8
-	Name  string
-	Notes []Note
-}
-
-// Returns true if a slice looks like a track ID slice.
-func IsID(b []byte) bool {
-	return b[1] == 0 && b[2] == 0 && b[3] == 0
-}
-
-// Returns true if a slice looks like a track name slice.
-func IsTrackNameSlice(b []byte) bool {
-	return IsPrintableAscii(b[1]) &&
-		IsPrintableAscii(b[2]) &&
-		IsPrintableAscii(b[3])
+type track struct {
+	id    uint8
+	name  string
+	notes []note
 }
 
 // Parses an entire io.Reader into a slice of Tracks.
-func ParseTracks(r io.Reader) ([]*Track, error) {
-	tracks := make([]*Track, 0)
+func parseTracks(r io.Reader) ([]*track, error) {
+	tracks := make([]*track, 0)
 	b := bufio.NewReader(r)
 
 	for {
 		// Parse instrument number
 		var trackID uint8
-		err := ReadIntoValue(b, NumTrackIDBytes,
+		err := readIntoValue(b, numTrackIDBytes,
 			&trackID, binary.BigEndian)
 		if err == io.EOF {
 			break
@@ -54,13 +42,13 @@ func ParseTracks(r io.Reader) ([]*Track, error) {
 			return nil, err
 		}
 
-		if err := ReadPadding(b, NumTrackPaddingBytes); err != nil {
+		if err := readPadding(b, numTrackPaddingBytes); err != nil {
 			return nil, err
 		}
 
 		// Parse size of track name
 		var trackNameSize uint8
-		if err := ReadIntoValue(b, NumTrackNameSizeBytes,
+		if err := readIntoValue(b, numTrackNameSizeBytes,
 			&trackNameSize, binary.BigEndian); err != nil {
 			return nil, err
 		}
@@ -73,16 +61,16 @@ func ParseTracks(r io.Reader) ([]*Track, error) {
 		trackName := string(trackNameBytes)
 
 		// Parse notes
-		noteBytes := make([]byte, NumNotes)
+		noteBytes := make([]byte, numNotes)
 		if _, err := b.Read(noteBytes); err != nil {
 			return nil, err
 		}
-		notes := ConvertBytesToMeasure(noteBytes)
+		notes := convertBytesToMeasure(noteBytes)
 
-		track := &Track{
-			ID:    trackID,
-			Name:  trackName,
-			Notes: notes,
+		track := &track{
+			id:    trackID,
+			name:  trackName,
+			notes: notes,
 		}
 		tracks = append(tracks, track)
 	}

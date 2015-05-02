@@ -10,21 +10,21 @@ import (
 // Pattern is the high level representation of the
 // drum pattern contained in a .splice file.
 type Pattern struct {
-	HW     string
-	Tempo  float32
-	Tracks []*Track
+	hw     string
+	tempo  float32
+	tracks []*track
 }
 
 func (p *Pattern) String() string {
 	str := ""
-	str += fmt.Sprintf("Saved with HW Version: %s\n", p.HW)
-	str += fmt.Sprintf("Tempo: %v\n", p.Tempo)
+	str += fmt.Sprintf("Saved with HW Version: %s\n", p.hw)
+	str += fmt.Sprintf("Tempo: %v\n", p.tempo)
 
-	for _, track := range p.Tracks {
-		str += fmt.Sprintf("(%v) %s\t", track.ID, track.Name)
+	for _, track := range p.tracks {
+		str += fmt.Sprintf("(%v) %s\t", track.id, track.name)
 
-		if len(track.Notes) > 0 {
-			for i, note := range track.Notes {
+		if len(track.notes) > 0 {
+			for i, note := range track.notes {
 				if i%4 == 0 {
 					str += "|"
 				}
@@ -43,18 +43,18 @@ func (p *Pattern) String() string {
 const (
 	// The size in bytes of the data contained in the main
 	// metadata segment of a splice file
-	NumInitialPaddingBytes = 6
-	NumPayloadSizeBytes    = 8
-	NumHWVersionBytes      = 32
-	NumTempoBytes          = 4
+	numInitialPaddingBytes = 6
+	numPayloadSizeBytes    = 8
+	numHWVersionBytes      = 32
+	numTempoBytes          = 4
 )
 
 // Returns the size of the track data payload based on
 // the size of the entire payload.
-func TrackDataSize(payloadSize uint64) uint64 {
+func trackDataSize(payloadSize uint64) uint64 {
 	return payloadSize -
-		uint64(NumHWVersionBytes) -
-		uint64(NumTempoBytes)
+		uint64(numHWVersionBytes) -
+		uint64(numTempoBytes)
 }
 
 // DecodeFile decodes the drum machine file found at the provided path
@@ -67,15 +67,15 @@ func DecodeFile(path string) (*Pattern, error) {
 	}
 	defer file.Close()
 
-	if err := ReadPadding(file, NumInitialPaddingBytes); err != nil {
+	if err := readPadding(file, numInitialPaddingBytes); err != nil {
 		return nil, err
 	}
 
 	// Read payload size
 	var payloadSize uint64
-	if err := ReadIntoValue(
+	if err := readIntoValue(
 		file,
-		NumPayloadSizeBytes,
+		numPayloadSizeBytes,
 		&payloadSize,
 		binary.BigEndian,
 	); err != nil {
@@ -83,25 +83,25 @@ func DecodeFile(path string) (*Pattern, error) {
 	}
 
 	// Read hardware version
-	hwVersionBytes := make([]byte, NumHWVersionBytes)
+	hwVersionBytes := make([]byte, numHWVersionBytes)
 	if _, err := file.Read(hwVersionBytes); err != nil {
 		return nil, err
 	}
-	hwVersionBytes = RemoveNullBytes(hwVersionBytes)
+	hwVersionBytes = removeNullBytes(hwVersionBytes)
 	hwVersion := string(hwVersionBytes)
 
 	// Read tempo
 	var tempo float32
-	if err := ReadIntoValue(
+	if err := readIntoValue(
 		file,
-		NumTempoBytes,
+		numTempoBytes,
 		&tempo,
 		binary.LittleEndian,
 	); err != nil {
 		return nil, err
 	}
 
-	trackSize := TrackDataSize(payloadSize)
+	trackSize := trackDataSize(payloadSize)
 
 	// Read track data
 	trackBytes := make([]byte, trackSize)
@@ -111,15 +111,15 @@ func DecodeFile(path string) (*Pattern, error) {
 
 	// Parse bytes into tracks
 	trackBuffer := bytes.NewBuffer(trackBytes)
-	tracks, err := ParseTracks(trackBuffer)
+	tracks, err := parseTracks(trackBuffer)
 	if err != nil {
 		return nil, err
 	}
 
 	pattern := &Pattern{
-		HW:     hwVersion,
-		Tempo:  tempo,
-		Tracks: tracks,
+		hw:     hwVersion,
+		tempo:  tempo,
+		tracks: tracks,
 	}
 
 	return pattern, nil
