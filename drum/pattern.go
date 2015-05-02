@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 )
 
 // Pattern is the high level representation of the
@@ -56,24 +55,16 @@ func mapDecodeError(e error) error {
 
 var ErrInvalidSpliceFile = errors.New("Splice file is invalid")
 
-// DecodeFile decodes the drum machine file found at the provided path
-// and returns a pointer to a parsed pattern which is the entry point to the
-// rest of the data.
-func DecodeFile(path string) (*Pattern, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	if err := readPadding(file, numInitialPaddingBytes); err != nil {
+// Reads a pattern out of an io.Reader.
+func readPattern(r io.Reader) (*Pattern, error) {
+	if err := readPadding(r, numInitialPaddingBytes); err != nil {
 		return nil, mapDecodeError(err)
 	}
 
 	// Read payload size
 	var payloadSize uint64
 	if err := readIntoValue(
-		file,
+		r,
 		numPayloadSizeBytes,
 		&payloadSize,
 		binary.BigEndian,
@@ -83,7 +74,7 @@ func DecodeFile(path string) (*Pattern, error) {
 
 	// Read hardware version
 	hwVersionBytes := make([]byte, numHWVersionBytes)
-	if _, err := file.Read(hwVersionBytes); err != nil {
+	if _, err := r.Read(hwVersionBytes); err != nil {
 		return nil, mapDecodeError(err)
 	}
 	hwVersionBytes = removeNullBytes(hwVersionBytes)
@@ -92,7 +83,7 @@ func DecodeFile(path string) (*Pattern, error) {
 	// Read tempo
 	var tempo float32
 	if err := readIntoValue(
-		file,
+		r,
 		numTempoBytes,
 		&tempo,
 		binary.LittleEndian,
@@ -104,7 +95,7 @@ func DecodeFile(path string) (*Pattern, error) {
 
 	// Read track data
 	trackBytes := make([]byte, trackSize)
-	if _, err := file.Read(trackBytes); err != nil {
+	if _, err := r.Read(trackBytes); err != nil {
 		return nil, mapDecodeError(err)
 	}
 
