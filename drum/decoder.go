@@ -42,14 +42,13 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 // Decode decodes a pattern.
-func (d *Decoder) Decode(p *Pattern) error {
+func (d *Decoder) Decode() (*Pattern, error) {
 	pattern, err := d.readPattern()
 	d.Err = err
 	if d.Err != nil {
-		return err
+		return nil, err
 	}
-	*p = *pattern
-	return nil
+	return pattern, nil
 }
 
 // Returns the size of the track data payload based on
@@ -179,11 +178,11 @@ func DecodeFile(path string) (*Pattern, error) {
 	}
 	defer file.Close()
 
-	var pattern Pattern
 	decoder := NewDecoder(file)
-	if err := decoder.Decode(&pattern); err != nil {
+	pattern, err := decoder.Decode()
+	if err != nil {
 		return nil, err
 	}
 
-	return &pattern, nil
+	return pattern, nil
 }
