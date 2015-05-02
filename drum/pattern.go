@@ -3,7 +3,9 @@ package drum
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -57,6 +59,18 @@ func trackDataSize(payloadSize uint64) uint64 {
 		uint64(numTempoBytes)
 }
 
+// Maps a decoding error to an error that may be useful outside
+// of the package.
+func mapDecodeError(e error) error {
+	if e == io.EOF {
+		return ErrInvalidSpliceFile
+	} else {
+		return e
+	}
+}
+
+var ErrInvalidSpliceFile = errors.New("Splice file is invalid")
+
 // DecodeFile decodes the drum machine file found at the provided path
 // and returns a pointer to a parsed pattern which is the entry point to the
 // rest of the data.
@@ -68,7 +82,7 @@ func DecodeFile(path string) (*Pattern, error) {
 	defer file.Close()
 
 	if err := readPadding(file, numInitialPaddingBytes); err != nil {
-		return nil, err
+		return nil, mapDecodeError(err)
 	}
 
 	// Read payload size
@@ -79,13 +93,13 @@ func DecodeFile(path string) (*Pattern, error) {
 		&payloadSize,
 		binary.BigEndian,
 	); err != nil {
-		return nil, err
+		return nil, mapDecodeError(err)
 	}
 
 	// Read hardware version
 	hwVersionBytes := make([]byte, numHWVersionBytes)
 	if _, err := file.Read(hwVersionBytes); err != nil {
-		return nil, err
+		return nil, mapDecodeError(err)
 	}
 	hwVersionBytes = removeNullBytes(hwVersionBytes)
 	hwVersion := string(hwVersionBytes)
@@ -98,7 +112,7 @@ func DecodeFile(path string) (*Pattern, error) {
 		&tempo,
 		binary.LittleEndian,
 	); err != nil {
-		return nil, err
+		return nil, mapDecodeError(err)
 	}
 
 	trackSize := trackDataSize(payloadSize)
@@ -106,14 +120,14 @@ func DecodeFile(path string) (*Pattern, error) {
 	// Read track data
 	trackBytes := make([]byte, trackSize)
 	if _, err := file.Read(trackBytes); err != nil {
-		return nil, err
+		return nil, mapDecodeError(err)
 	}
 
 	// Parse bytes into tracks
 	trackBuffer := bytes.NewBuffer(trackBytes)
 	tracks, err := parseTracks(trackBuffer)
 	if err != nil {
-		return nil, err
+		return nil, mapDecodeError(err)
 	}
 
 	pattern := &Pattern{
