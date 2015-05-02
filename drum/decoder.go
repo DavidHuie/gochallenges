@@ -31,20 +31,21 @@ var (
 // Decoder decodes a pattern from an io.Reader.
 type Decoder struct {
 	reader io.Reader
+
+	// This is set to a decode error if one is detected
+	Err error
 }
 
 // NewDecoder returns a new Pattern decoder.
 func NewDecoder(r io.Reader) *Decoder {
-	return &Decoder{r}
+	return &Decoder{r, nil}
 }
 
 // Decode decodes a pattern.
 func (d *Decoder) Decode(p *Pattern) error {
 	pattern, err := d.readPattern()
-	if err != nil {
-		if err == io.EOF {
-			return ErrInvalidSpliceData
-		}
+	d.Err = err
+	if d.Err != nil {
 		return err
 	}
 	*p = *pattern
