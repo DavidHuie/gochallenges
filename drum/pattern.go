@@ -47,13 +47,14 @@ func trackDataSize(payloadSize uint64) uint64 {
 // of the package.
 func mapDecodeError(e error) error {
 	if e == io.EOF {
-		return ErrInvalidSpliceFile
-	} else {
-		return e
+		return ErrInvalidSpliceData
 	}
+	return e
 }
 
-var ErrInvalidSpliceFile = errors.New("Splice file is invalid")
+// ErrInvalidSpliceData is returned when we detect an error
+// in the binary structure of a splice file
+var ErrInvalidSpliceData = errors.New("Splice file is invalid")
 
 // Reads a pattern out of an io.Reader.
 func readPattern(r io.Reader) (*Pattern, error) {

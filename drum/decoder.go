@@ -5,16 +5,17 @@ import (
 	"os"
 )
 
+// Decoder decodes a pattern from an io.Reader.
 type Decoder struct {
 	reader io.Reader
 }
 
-// Returns a new Pattern decoder.
+// NewDecoder returns a new Pattern decoder.
 func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r}
 }
 
-// Decodes a pattern.
+// Decode decodes a pattern.
 func (d *Decoder) Decode(p *Pattern) error {
 	pattern, err := readPattern(d.reader)
 	if err != nil {
