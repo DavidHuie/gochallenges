@@ -35,6 +35,9 @@ func NewDecoder(r io.Reader) *Decoder {
 func (d *Decoder) Decode(p *Pattern) error {
 	pattern, err := d.readPattern()
 	if err != nil {
+		if err == io.EOF {
+			return ErrInvalidSpliceData
+		}
 		return err
 	}
 	*p = *pattern
@@ -49,15 +52,6 @@ func trackDataSize(payloadSize uint64) uint64 {
 		uint64(numTempoBytes)
 }
 
-// Maps a decoding error to an error that may be useful outside
-// of the package.
-func mapDecodeError(e error) error {
-	if e == io.EOF {
-		return ErrInvalidSpliceData
-	}
-	return e
-}
-
 // ErrInvalidSpliceData is returned when we detect an error
 // in the binary structure of a splice file
 var ErrInvalidSpliceData = errors.New("Splice file is invalid")
@@ -67,7 +61,7 @@ func (d *Decoder) readPattern() (*Pattern, error) {
 	// Read header
 	header := make([]byte, numHeaderBytes)
 	if _, err := d.reader.Read(header); err != nil {
-		return nil, mapDecodeError(err)
+		return nil, err
 	}
 
 	// Validate header
@@ -78,13 +72,13 @@ func (d *Decoder) readPattern() (*Pattern, error) {
 	// Read payload size
 	var payloadSize uint64
 	if err := binary.Read(d.reader, binary.BigEndian, &payloadSize); err != nil {
-		return nil, mapDecodeError(err)
+		return nil, err
 	}
 
 	// Read hardware version
 	hwVersionBytes := make([]byte, numHWVersionBytes)
 	if _, err := d.reader.Read(hwVersionBytes); err != nil {
-		return nil, mapDecodeError(err)
+		return nil, err
 	}
 	hwVersionBytes = removeNullBytes(hwVersionBytes)
 	hwVersion := string(hwVersionBytes)
@@ -92,13 +86,13 @@ func (d *Decoder) readPattern() (*Pattern, error) {
 	// Read tempo
 	var tempo float32
 	if err := binary.Read(d.reader, binary.LittleEndian, &tempo); err != nil {
-		return nil, mapDecodeError(err)
+		return nil, err
 	}
 
 	// Read track data
 	tracks, err := d.parseTracks()
 	if err != nil {
-		return nil, mapDecodeError(err)
+		return nil, err
 	}
 
 	pattern := &Pattern{
