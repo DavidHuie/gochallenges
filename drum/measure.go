@@ -5,7 +5,7 @@ type measure []note
 // Converts a array of bytes consisting of the values
 // 0x00 or 0x01 to measure.
 func convertBytesToMeasure(b []byte) measure {
-	measure := make(measure, 0)
+	var measure measure
 	for _, n := range b {
 		var val bool
 		if n == 0x01 {

@@ -28,7 +28,7 @@ type track struct {
 
 // Parses an entire io.Reader into a slice of Tracks.
 func parseTracks(r io.Reader) ([]*track, error) {
-	tracks := make([]*track, 0)
+	var tracks []*track
 	b := bufio.NewReader(r)
 
 	for {
