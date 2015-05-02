@@ -29,9 +29,13 @@ func (p *Pattern) String() string {
 const (
 	// The size in bytes of the data contained in the main
 	// metadata segment of a splice file
+	numHeaderBytes         = 6
 	numInitialPaddingBytes = 6
 	numHWVersionBytes      = 32
 	numTempoBytes          = 4
+
+	// This value is at the beginning of every splice file
+	headerValue = "SPLICE"
 )
 
 // Returns the size of the track data payload based on
@@ -57,8 +61,15 @@ var ErrInvalidSpliceData = errors.New("Splice file is invalid")
 
 // Reads a pattern out of an io.Reader.
 func readPattern(r io.Reader) (*Pattern, error) {
-	if err := readPadding(r, numInitialPaddingBytes); err != nil {
+	// Read header
+	header := make([]byte, numHeaderBytes)
+	if _, err := r.Read(header); err != nil {
 		return nil, mapDecodeError(err)
+	}
+
+	// Validate header
+	if string(header) != headerValue {
+		return nil, ErrInvalidSpliceData
 	}
 
 	// Read payload size
