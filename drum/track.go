@@ -10,9 +10,7 @@ import (
 const (
 	// The size in bytes of the data contained in the
 	// track segment of a splice file
-	numTrackIDBytes       = 1
-	numTrackPaddingBytes  = 3
-	numTrackNameSizeBytes = 1
+	numTrackPaddingBytes = 3
 
 	// The number of notes in each track
 	numNotes = 16
@@ -55,8 +53,7 @@ func parseTracks(r io.Reader) ([]*track, error) {
 	for {
 		// Parse instrument number
 		var trackID uint8
-		err := readIntoValue(b, numTrackIDBytes,
-			&trackID, binary.BigEndian)
+		err := binary.Read(b, binary.BigEndian, &trackID)
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -69,8 +66,7 @@ func parseTracks(r io.Reader) ([]*track, error) {
 
 		// Parse size of track name
 		var trackNameSize uint8
-		if err := readIntoValue(b, numTrackNameSizeBytes,
-			&trackNameSize, binary.BigEndian); err != nil {
+		if err := binary.Read(b, binary.BigEndian, &trackNameSize); err != nil {
 			return nil, err
 		}
 

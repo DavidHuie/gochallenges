@@ -30,7 +30,6 @@ const (
 	// The size in bytes of the data contained in the main
 	// metadata segment of a splice file
 	numInitialPaddingBytes = 6
-	numPayloadSizeBytes    = 8
 	numHWVersionBytes      = 32
 	numTempoBytes          = 4
 )
@@ -64,12 +63,7 @@ func readPattern(r io.Reader) (*Pattern, error) {
 
 	// Read payload size
 	var payloadSize uint64
-	if err := readIntoValue(
-		r,
-		numPayloadSizeBytes,
-		&payloadSize,
-		binary.BigEndian,
-	); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &payloadSize); err != nil {
 		return nil, mapDecodeError(err)
 	}
 
@@ -83,18 +77,12 @@ func readPattern(r io.Reader) (*Pattern, error) {
 
 	// Read tempo
 	var tempo float32
-	if err := readIntoValue(
-		r,
-		numTempoBytes,
-		&tempo,
-		binary.LittleEndian,
-	); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &tempo); err != nil {
 		return nil, mapDecodeError(err)
 	}
 
-	trackSize := trackDataSize(payloadSize)
-
 	// Read track data
+	trackSize := trackDataSize(payloadSize)
 	trackBytes := make([]byte, trackSize)
 	if _, err := r.Read(trackBytes); err != nil {
 		return nil, mapDecodeError(err)
